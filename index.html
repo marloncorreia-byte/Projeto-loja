@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Simples de Venda e Stock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2ecc71;
+            --primary-dark: #27ae60;
+            --secondary: #34495e;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-sub: #7f8c8d;
+            --shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        h1 { text-align: center; color: var(--secondary); font-weight: 700; margin-bottom: 30px; }
+        h2 { font-size: 1.2rem; color: var(--secondary); margin-top: 30px; margin-bottom: 15px; }
+
+        .dashboard {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--primary);
+        }
+
+        .dashboard-value { color: var(--primary); font-size: 1.8rem; font-weight: 700; margin: 5px 0 0 0; }
+
+        .add-form-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .btn-add {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .product-list { list-style: none; padding: 0; display: grid; gap: 15px; }
+
+        .product-card {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-actions { display: flex; gap: 5px; }
+
+        button { border: none; border-radius: 6px; padding: 8px 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+
+        .btn-sell { background-color: #eafaf1; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-undo { background-color: #fef5e7; color: var(--warning); border: 1px solid var(--warning); }
+        .btn-delete { background-color: transparent; color: #bdc3c7; font-size: 1.2rem; }
+
+        /* MODAL DE TROCO */
+        #change-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .change-result {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f0fff4;
+            border-radius: 8px;
+            color: var(--primary-dark);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gestão Simples</h1>
+    
+    <div class="dashboard">
+        <div>
+            <div class="dashboard-title">Vendas Hoje <button onclick="resetSales()" style="font-size:0.6rem">Zerar</button></div>
+            <p class="dashboard-value" id="total-sales">R$ 0,00</p>
+        </div>
+        <span style="font-size: 2rem;">💰</span>
+    </div>
+
+    <h2>🛍️ Adicionar Produto</h2>
+    <div class="add-form-card">
+        <input type="text" id="prod-name" placeholder="Produto">
+        <input type="number" id="prod-price" placeholder="Preço" step="0.01">
+        <input type="number" id="prod-qtd" placeholder="Qtd">
+        <button class="btn-add" onclick="addProduct()">Add</button>
+    </div>
+
+    <h2>📦 Estoque e Vendas</h2>
+    <ul class="product-list" id="inventory-list"></ul>
+</div>
+
+<div id="change-modal">
+    <div class="modal-content">
+        <h3>Calcular Troco</h3>
+        <p id="modal-product-info" style="font-size: 0.9rem; color: #666;"></p>
+        <input type="number" id="payment-amount" placeholder="Valor pago pelo cliente" step="0.01" oninput="calculateChange()">
+        <div class="change-result" id="change-display">Troco: R$ 0,00</div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-add" style="flex: 1;" onclick="confirmSale()">Confirmar Venda</button>
+            <button style="flex: 1; background: #eee;" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+    let totalSales = parseFloat(localStorage.getItem('totalSales')) || 0;
+    let currentSaleIndex = null;
+
+    function updateUI() {
+        const list = document.getElementById('inventory-list');
+        list.innerHTML = '';
+        
+        inventory.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = 'product-card';
+            li.innerHTML = `
+                <div>
+                    <p class="product-name">${item.name}</p>
+                    <div class="product-meta">R$ ${item.price.toFixed(2)} | Estoque: <strong>${item.qtd}</strong></div>
+                </div>
+                <div class="product-actions">
+                    <button class="btn-sell" onclick="openSaleModal(${index})" ${item.qtd === 0 ? 'disabled' : ''}>Vender</button>
+                    <button class="btn-undo" onclick="undoSale(${index})">↩</button>
+                    <button class="btn-delete" onclick="deleteProduct(${index})">×</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+
+        document.getElementById('total-sales').innerText = `R$ ${totalSales.toFixed(2)}`;
+        localStorage.setItem('inventory', JSON.stringify(inventory));
+        localStorage.setItem('totalSales', totalSales);
+    }
+
+    function addProduct() {
+        const name = document.getElementById('prod-name').value;
+        const price = document.getElementById('prod-price').value;
+        const qtd = document.getElementById('prod-qtd').value;
+        if (name && price && qtd) {
+            inventory.push({ name, price: parseFloat(price), qtd: parseInt(qtd) });
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-qtd').value = '';
+            updateUI();
+        }
+    }
+
+    // --- Lógica de Troco ---
+    function openSaleModal(index) {
+        currentSaleIndex = index;
+        const item = inventory[index];
+        document.getElementById('modal-product-info').innerText = `${item.name} - R$ ${item.price.toFixed(2)}`;
+        document.getElementById('payment-amount').value = '';
+        document.getElementById('change-display').innerText = 'Troco: R$ 0,00';
+        document.getElementById('change-modal').style.display = 'flex';
+        document.getElementById('payment-amount').focus();
+    }
+
+    function calculateChange() {
+        const payment = parseFloat(document.getElementById('payment-amount').value) || 0;
+        const price = inventory[currentSaleIndex].price;
+        const change = payment - price;
+        document.getElementById('change-display').innerText = `Troco: R$ ${Math.max(0, change).toFixed(2)}`;
+    }
+
+    function confirmSale() {
+        if (currentSaleIndex !== null && inventory[currentSaleIndex].qtd > 0) {
+            inventory[currentSaleIndex].qtd -= 1;
+            totalSales += inventory[currentSaleIndex].price;
+            closeModal();
+            updateUI();
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('change-modal').style.display = 'none';
+        currentSaleIndex = null;
+    }
+
+    function undoSale(index) {
+        if (totalSales >= inventory[index].price) {
+            inventory[index].qtd += 1;
+            totalSales -= inventory[index].price;
+            updateUI();
+        }
+    }
+
+    function deleteProduct(index) {
+        if(confirm("Excluir produto?")) {
+            inventory.splice(index, 1);
+            updateUI();
+        }
+    }
+
+    function resetSales() {
+        if (confirm("Zerar total de vendas?")) {
+            totalSales = 0;
+            updateUI();
+        }
+    }
+
+    window.onload = updateUI;
+</script>
+
+</body>
+</html>
